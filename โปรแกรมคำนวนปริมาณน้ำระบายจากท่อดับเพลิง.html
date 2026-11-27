@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>คำนวณน้ำระบายท่อดับเพลิง 100 มม. | Fire Hydrant Discharge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'IBM Plex Sans Thai', 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f1f5f9;
+        }
+        .font-num {
+            font-family: 'Inter', 'IBM Plex Sans Thai', sans-serif;
+            font-variant-numeric: tabular-nums;
+        }
+        /* Hide number input spinners for clean mobile UI */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        /* Custom scrollbar for reference table */
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 pb-12 select-none sm:select-auto">
+
+    <!-- Top Header -->
+    <header class="bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 text-white shadow-lg sticky top-0 z-30 border-b border-white/10">
+        <div class="max-w-3xl mx-auto px-4 py-3.5 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="bg-red-600 p-2.5 rounded-2xl shadow-md border border-red-400/30 shrink-0">
+                    <!-- Fire Hydrant Icon -->
+                    <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 7V5a4 4 0 0 1 8 0v2"/>
+                        <rect x="6" y="7" width="12" height="12" rx="2"/>
+                        <path d="M3 11h3"/>
+                        <path d="M18 11h3"/>
+                        <path d="M5 19h14"/>
+                        <circle cx="12" cy="13" r="2"/>
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-base sm:text-xl font-bold leading-tight tracking-tight truncate">โปรแกรมคำนวณปริมาณน้ำระบายจากท่อดับเพลิง</h1>
+                    <p class="text-xs sm:text-sm text-slate-300 font-normal truncate">ระบบประเมินอัตราการไหลและปริมาณน้ำระบายตามมาตรฐานตารางวิศวกรรมประปา</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-3xl mx-auto px-3 sm:px-4 pt-4 space-y-4">
+
+        <!-- Navigation Tabs (Calculator vs Reference Table) -->
+        <div class="grid grid-cols-2 gap-1.5 bg-slate-200/90 p-1.5 rounded-2xl shadow-inner">
+            <button id="tab-calc-btn" onclick="switchTab('calc')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base transition-all bg-white text-blue-900 shadow-sm flex items-center justify-center gap-2">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                เครื่องคำนวณ Q
+            </button>
+            <button id="tab-table-btn" onclick="switchTab('table')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                ตารางอ้างอิงมาตรฐาน
+            </button>
+        </div>
+
+        <!-- VIEW 1: CALCULATOR -->
+        <div id="view-calc" class="space-y-4">
+
+            <!-- Result Card (Sticky / High Contrast for Outdoor Reading) -->
+            <section class="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white rounded-3xl p-4 sm:p-6 shadow-xl border border-blue-800/60 relative overflow-hidden">
+                <!-- Decorative glow -->
+                <div class="absolute -right-10 -top-10 w-36 h-36 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="absolute -left-10 -bottom-10 w-36 h-36 bg-red-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="flex items-center justify-between mb-3">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-red-600 text-white px-2.5 py-1 rounded-lg shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                        ผลลัพธ์ปริมาณน้ำ (Q)
+                    </span>
+                    <button onclick="copySummary()" class="text-xs bg-white/10 hover:bg-white/20 active:scale-95 text-blue-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-white/15">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <span id="copy-btn-text">คัดลอกผล</span>
+                    </button>
+                </div>
+
+                <!-- Primary Total Volume Q -->
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 mb-3">
+                    <div class="flex flex-wrap items-baseline justify-between gap-2">
+                        <span class="text-sm sm:text-base text-blue-200 font-medium">ปริมาณน้ำรวม (Q = อัตราไหล × <span id="disp-t" class="font-num font-bold text-white">15</span> นาที)</span>
+                        <span class="text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-md font-num">
+                            ≈ <span id="res-total-liters">7,905.00</span> ลิตร
+                        </span>
+                    </div>
+                    <div class="mt-1 flex items-baseline gap-2.5">
+                        <span id="res-total-table" class="font-num text-4xl sm:text-5xl font-extrabold text-amber-400 tracking-tight">7.91</span>
+                        <span class="text-lg sm:text-xl font-bold text-white">ลบ.ม.</span>
+                    </div>
+                    <div class="mt-1.5 pt-1.5 border-t border-white/10 flex flex-wrap items-center justify-between text-xs text-slate-300 gap-1">
+                        <span>วิธีคำนวณ: <strong id="res-formula-breakdown" class="font-num text-white">0.527 × 15</strong></span>
+                        <span id="res-lookup-mode" class="text-blue-200 font-medium">ตรงช่องตาราง (Exact)</span>
+                    </div>
+                </div>
+
+                <!-- Secondary Flow Rate Q_rate -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="bg-blue-900/50 rounded-2xl p-3 border border-blue-700/50">
+                        <div class="text-xs text-blue-200 mb-0.5">อัตราการไหล (ลบ.ม./นาที)</div>
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="res-rate-m3" class="font-num text-2xl sm:text-3xl font-bold text-white">0.527</span>
+                            <span class="text-xs sm:text-sm text-blue-200 font-medium">ลบ.ม./นาที</span>
+                        </div>
+                    </div>
+                    <div class="bg-blue-900/50 rounded-2xl p-3 border border-blue-700/50">
+                        <div class="text-xs text-blue-200 mb-0.5">อัตราการไหล (ลิตร)</div>
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="res-rate-liters" class="font-num text-2xl sm:text-3xl font-bold text-cyan-300">624</span>
+                            <span class="text-xs sm:text-sm text-blue-200 font-medium">ลิตร/นาที</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Input Section -->
+            <section class="bg-white rounded-3xl p-4 sm:p-6 shadow-md border border-slate-200 space-y-5">
+                
+                <!-- Input X -->
+                <div class="bg-slate-50 rounded-2xl p-3.5 sm:p-4 border-2 border-slate-200 focus-within:border-blue-600 transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="input-x" class="flex items-center gap-2 font-bold text-slate-800 text-base sm:text-lg">
+                            <span class="w-8 h-8 rounded-xl bg-blue-600 text-white font-num font-extrabold flex items-center justify-center shadow-sm">X</span>
+                            <span>ระยะตกแนวนอน (เมตร)</span>
+                        </label>
+                        <span class="text-xs font-semibold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-lg">ตาราง: 0.2 - 3.0 ม.</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="stepValue('x', -0.1)" aria-label="ลดค่า X" class="w-14 h-14 rounded-2xl bg-white hover:bg-slate-100 active:bg-blue-100 active:scale-95 border-2 border-slate-300 text-slate-700 font-bold text-2xl flex items-center justify-center shadow-sm transition shrink-0">
+                            −
+                        </button>
+                        <div class="relative flex-1">
+                            <input type="number" id="input-x" inputmode="decimal" step="0.1" min="0.01" value="0.5" oninput="calculate()" class="font-num w-full h-14 text-center text-2xl sm:text-3xl font-extrabold text-blue-900 bg-white border-2 border-blue-200 rounded-2xl focus:outline-none focus:border-blue-600 shadow-inner">
+                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400 pointer-events-none">ม.</span>
+                        </div>
+                        <button type="button" onclick="stepValue('x', 0.1)" aria-label="เพิ่มค่า X" class="w-14 h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 active:scale-95 text-white font-bold text-2xl flex items-center justify-center shadow-sm transition shrink-0">
+                            +
+                        </button>
+                    </div>
+
+                    <!-- Quick Presets for X -->
+                    <div class="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-1">
+                        <span class="text-xs text-slate-500 font-medium shrink-0 mr-1">เลือกด่วน:</span>
+                        <button type="button" onclick="setValue('x', 0.3)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-blue-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">0.3</button>
+                        <button type="button" onclick="setValue('x', 0.5)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-blue-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">0.5</button>
+                        <button type="button" onclick="setValue('x', 0.8)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-blue-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">0.8</button>
+                        <button type="button" onclick="setValue('x', 1.0)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-blue-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">1.0</button>
+                        <button type="button" onclick="setValue('x', 1.5)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-blue-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">1.5</button>
+                        <button type="button" onclick="setValue('x', 2.0)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-blue-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">2.0</button>
+                    </div>
+                </div>
+
+                <!-- Input Y -->
+                <div class="bg-slate-50 rounded-2xl p-3.5 sm:p-4 border-2 border-slate-200 focus-within:border-red-600 transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="input-y" class="flex items-center gap-2 font-bold text-slate-800 text-base sm:text-lg">
+                            <span class="w-8 h-8 rounded-xl bg-red-600 text-white font-num font-extrabold flex items-center justify-center shadow-sm">Y</span>
+                            <span>ระดับสูงแนวตั้ง (เมตร)</span>
+                        </label>
+                        <span class="text-xs font-semibold text-red-700 bg-red-100 px-2.5 py-1 rounded-lg">ตาราง: 0.5 - 2.0 ม.</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="stepValue('y', -0.1)" aria-label="ลดค่า Y" class="w-14 h-14 rounded-2xl bg-white hover:bg-slate-100 active:bg-red-100 active:scale-95 border-2 border-slate-300 text-slate-700 font-bold text-2xl flex items-center justify-center shadow-sm transition shrink-0">
+                            −
+                        </button>
+                        <div class="relative flex-1">
+                            <input type="number" id="input-y" inputmode="decimal" step="0.1" min="0.01" value="0.7" oninput="calculate()" class="font-num w-full h-14 text-center text-2xl sm:text-3xl font-extrabold text-red-700 bg-white border-2 border-red-200 rounded-2xl focus:outline-none focus:border-red-600 shadow-inner">
+                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400 pointer-events-none">ม.</span>
+                        </div>
+                        <button type="button" onclick="stepValue('y', 0.1)" aria-label="เพิ่มค่า Y" class="w-14 h-14 rounded-2xl bg-red-600 hover:bg-red-700 active:bg-red-800 active:scale-95 text-white font-bold text-2xl flex items-center justify-center shadow-sm transition shrink-0">
+                            +
+                        </button>
+                    </div>
+
+                    <!-- Quick Presets for Y -->
+                    <div class="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-1">
+                        <span class="text-xs text-slate-500 font-medium shrink-0 mr-1">เลือกด่วน:</span>
+                        <button type="button" onclick="setValue('y', 0.5)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-red-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">0.5</button>
+                        <button type="button" onclick="setValue('y', 0.6)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-red-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">0.6</button>
+                        <button type="button" onclick="setValue('y', 0.7)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-red-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">0.7</button>
+                        <button type="button" onclick="setValue('y', 0.8)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-red-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">0.8</button>
+                        <button type="button" onclick="setValue('y', 1.0)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-red-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">1.0</button>
+                        <button type="button" onclick="setValue('y', 1.2)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-red-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">1.2</button>
+                    </div>
+                </div>
+
+                <!-- Input t (Time in minutes) -->
+                <div class="bg-slate-50 rounded-2xl p-3.5 sm:p-4 border-2 border-slate-200 focus-within:border-emerald-600 transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="input-t" class="flex items-center gap-2 font-bold text-slate-800 text-base sm:text-lg">
+                            <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white font-num font-extrabold flex items-center justify-center shadow-sm">t</span>
+                            <span>ระยะเวลาระบายน้ำ (นาที)</span>
+                        </label>
+                        <span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg">หน่วย: นาที</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="stepValue('t', -1)" aria-label="ลดเวลา t" class="w-14 h-14 rounded-2xl bg-white hover:bg-slate-100 active:bg-emerald-100 active:scale-95 border-2 border-slate-300 text-slate-700 font-bold text-2xl flex items-center justify-center shadow-sm transition shrink-0">
+                            −
+                        </button>
+                        <div class="relative flex-1">
+                            <input type="number" id="input-t" inputmode="decimal" step="1" min="0" value="15" oninput="calculate()" class="font-num w-full h-14 text-center text-2xl sm:text-3xl font-extrabold text-emerald-800 bg-white border-2 border-emerald-200 rounded-2xl focus:outline-none focus:border-emerald-600 shadow-inner">
+                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400 pointer-events-none">นาที</span>
+                        </div>
+                        <button type="button" onclick="stepValue('t', 1)" aria-label="เพิ่มเวลา t" class="w-14 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 active:scale-95 text-white font-bold text-2xl flex items-center justify-center shadow-sm transition shrink-0">
+                            +
+                        </button>
+                    </div>
+
+                    <!-- Quick Presets for t -->
+                    <div class="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-1">
+                        <span class="text-xs text-slate-500 font-medium shrink-0 mr-1">เวลาด่วน:</span>
+                        <button type="button" onclick="setValue('t', 1)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-emerald-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">1 นาที</button>
+                        <button type="button" onclick="setValue('t', 5)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-emerald-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">5 นาที</button>
+                        <button type="button" onclick="setValue('t', 10)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-emerald-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">10 นาที</button>
+                        <button type="button" onclick="setValue('t', 15)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-emerald-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">15 นาที</button>
+                        <button type="button" onclick="setValue('t', 30)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-emerald-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">30 นาที</button>
+                        <button type="button" onclick="setValue('t', 60)" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-emerald-500 text-xs font-num font-bold text-slate-700 active:scale-95 shrink-0">60 นาที</button>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+
+        <!-- VIEW 2: REFERENCE TABLE -->
+        <div id="view-table" class="hidden space-y-3">
+            <div class="bg-white rounded-3xl p-4 shadow-md border border-slate-200">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div>
+                        <h2 class="font-bold text-slate-900 text-base sm:text-lg">ตารางอัตราการไหล (ลบ.ม./นาที)</h2>
+                        <p class="text-xs text-slate-500">แตะที่ช่องตัวเลขในตารางเพื่อเลือกค่า X และ Y ไปคำนวณทันที</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-400 px-2.5 py-1 rounded-lg font-bold">
+                            <span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>
+                            ค่าที่เลือก: X=<span id="tbl-badge-x" class="font-num">0.5</span>, Y=<span id="tbl-badge-y" class="font-num">0.7</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Scrollable Matrix Table -->
+                <div class="table-container overflow-x-auto max-h-[62vh] border border-slate-300 rounded-2xl relative">
+                    <table class="w-full border-collapse text-center font-num text-xs sm:text-sm">
+                        <thead class="sticky top-0 z-20 bg-blue-900 text-white">
+                            <tr>
+                                <th class="sticky left-0 z-30 bg-slate-800 px-2.5 py-2.5 border-b border-r border-slate-600 font-bold whitespace-nowrap">
+                                    X \ Y (ม.)
+                                </th>
+                                <!-- Y headers generated by JS -->
+                                <script>
+                                    const yHeaders = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0];
+                                    yHeaders.forEach(y => {
+                                        document.write(`<th id="th-y-${y.toFixed(1)}" class="px-2.5 py-2.5 border-b border-r border-blue-800 font-bold min-w-[58px]">${y % 1 === 0 ? y.toFixed(0) : y.toFixed(1)}</th>`);
+                                    });
+                                </script>
+                            </tr>
+                        </thead>
+                        <tbody id="reference-table-body" class="divide-y divide-slate-200 bg-white">
+                            <!-- Rows generated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification (for Copy / Table Selection feedback) -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white px-4 py-2.5 rounded-2xl shadow-xl text-sm font-medium flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-50 border border-white/10">
+        <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        <span id="toast-msg">คัดลอกข้อมูลเรียบร้อย</span>
+    </div>
+
+    <script>
+        // Exact rows (X in meters) and columns (Y in meters) from 569624_2.jpg
+        const X_VALUES = [
+            0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
+            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8,
+            1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6,
+            2.7, 2.8, 2.9, 3.0
+        ];
+        const Y_VALUES = [
+            0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2,
+            1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0
+        ];
+
+        // Exact reference flow rates (m^3/min) from 569624_2.jpg keyed by "X.X_Y.Y"
+        const REFERENCE_TABLE_DATA = {
+            "0.2": [0.295, 0.246, 0.211, 0.184, 0.164, 0.148, 0.134, 0.123, 0.113, 0.105, 0.098, 0.092, 0.087, 0.082, 0.078, 0.074],
+            "0.4": [0.590, 0.492, 0.421, 0.369, 0.328, 0.295, 0.268, 0.246, 0.227, 0.211, 0.197, 0.184, 0.174, 0.164, 0.155, 0.148],
+            "0.5": [0.738, 0.615, 0.527, 0.461, 0.410, 0.369, 0.335, 0.307, 0.284, 0.263, 0.246, 0.231, 0.217, 0.205, 0.194, 0.184],
+            "0.6": [0.885, 0.738, 0.632, 0.553, 0.492, 0.443, 0.402, 0.369, 0.340, 0.316, 0.295, 0.277, 0.260, 0.246, 0.233, 0.221],
+            "0.7": [1.033, 0.861, 0.738, 0.645, 0.574, 0.516, 0.469, 0.430, 0.397, 0.369, 0.344, 0.323, 0.304, 0.287, 0.272, 0.258],
+            "0.8": [1.180, 0.983, 0.843, 0.738, 0.656, 0.590, 0.536, 0.492, 0.454, 0.421, 0.393, 0.369, 0.347, 0.328, 0.311, 0.295],
+            "0.9": [1.328, 1.106, 0.948, 0.830, 0.738, 0.664, 0.603, 0.553, 0.511, 0.474, 0.443, 0.415, 0.390, 0.369, 0.349, 0.332],
+            "1.0": [1.475, 1.229, 1.054, 0.922, 0.820, 0.738, 0.671, 0.615, 0.567, 0.527, 0.492, 0.461, 0.434, 0.410, 0.388, 0.369],
+            "1.1": [1.623, 1.352, 1.159, 1.014, 0.902, 0.811, 0.738, 0.676, 0.624, 0.580, 0.541, 0.507, 0.477, 0.451, 0.427, 0.406],
+            "1.2": [1.770, 1.475, 1.264, 1.106, 0.983, 0.885, 0.805, 0.738, 0.681, 0.632, 0.590, 0.553, 0.521, 0.492, 0.466, 0.443],
+            "1.3": [1.918, 1.598, 1.370, 1.199, 1.065, 0.959, 0.872, 0.799, 0.738, 0.685, 0.639, 0.599, 0.564, 0.533, 0.505, 0.479],
+            "1.4": [2.065, 1.721, 1.475, 1.291, 1.147, 1.033, 0.939, 0.861, 0.794, 0.738, 0.688, 0.645, 0.607, 0.574, 0.544, 0.516],
+            "1.5": [2.213, 1.844, 1.581, 1.383, 1.229, 1.106, 1.006, 0.922, 0.851, 0.790, 0.738, 0.692, 0.651, 0.615, 0.582, 0.553],
+            "1.6": [2.360, 1.967, 1.686, 1.475, 1.311, 1.180, 1.073, 0.983, 0.908, 0.843, 0.787, 0.738, 0.694, 0.656, 0.621, 0.590],
+            "1.7": [2.508, 2.090, 1.791, 1.567, 1.393, 1.254, 1.140, 1.045, 0.965, 0.896, 0.836, 0.784, 0.738, 0.697, 0.660, 0.627],
+            "1.8": [2.655, 2.213, 1.897, 1.660, 1.475, 1.328, 1.207, 1.106, 1.021, 0.948, 0.885, 0.830, 0.781, 0.738, 0.699, 0.664],
+            "1.9": [2.803, 2.336, 2.002, 1.752, 1.557, 1.401, 1.274, 1.168, 1.078, 1.001, 0.934, 0.876, 0.824, 0.779, 0.738, 0.701],
+            "2.0": [2.950, 2.459, 2.107, 1.844, 1.639, 1.475, 1.341, 1.229, 1.135, 1.054, 0.983, 0.922, 0.868, 0.820, 0.776, 0.738],
+            "2.1": [3.098, 2.582, 2.213, 1.936, 1.721, 1.549, 1.408, 1.291, 1.192, 1.106, 1.033, 0.968, 0.911, 0.861, 0.815, 0.774],
+            "2.2": [3.245, 2.705, 2.318, 2.028, 1.803, 1.623, 1.475, 1.352, 1.248, 1.159, 1.082, 1.014, 0.955, 0.902, 0.854, 0.811],
+            "2.3": [3.393, 2.827, 2.424, 2.121, 1.885, 1.696, 1.542, 1.414, 1.305, 1.212, 1.131, 1.060, 0.998, 0.942, 0.893, 0.848],
+            "2.4": [3.541, 2.950, 2.529, 2.213, 1.967, 1.770, 1.609, 1.475, 1.362, 1.264, 1.180, 1.106, 1.041, 0.983, 0.932, 0.885],
+            "2.5": [3.688, 3.073, 2.634, 2.305, 2.049, 1.844, 1.676, 1.537, 1.418, 1.317, 1.229, 1.153, 1.085, 1.024, 0.971, 0.922],
+            "2.6": [3.836, 3.196, 2.740, 2.397, 2.131, 1.918, 1.743, 1.598, 1.475, 1.370, 1.279, 1.199, 1.128, 1.065, 1.009, 0.959],
+            "2.7": [3.983, 3.319, 2.845, 2.489, 2.213, 1.992, 1.810, 1.660, 1.532, 1.423, 1.328, 1.245, 1.171, 1.106, 1.048, 0.996],
+            "2.8": [4.131, 3.442, 2.950, 2.582, 2.295, 2.065, 1.878, 1.721, 1.589, 1.475, 1.377, 1.291, 1.215, 1.147, 1.087, 1.033],
+            "2.9": [4.278, 3.565, 3.056, 2.674, 2.377, 2.139, 1.945, 1.783, 1.645, 1.528, 1.426, 1.337, 1.258, 1.188, 1.126, 1.070],
+            "3.0": [4.426, 3.688, 3.161, 2.766, 2.459, 2.213, 2.012, 1.844, 1.702, 1.581, 1.475, 1.383, 1.302, 1.229, 1.165, 1.106]
+        };
+
+        /**
+         * Find bounding grid indices for a given value in a sorted axis array.
+         * Returns exact match index or lower/upper bounds for interpolation.
+         */
+        function findGridBounds(val, axis) {
+            const EPS = 1e-9;
+            for (let i = 0; i < axis.length; i++) {
+                if (Math.abs(axis[i] - val) < EPS) {
+                    return { exactIndex: i, i0: i, i1: i, t: 0 };
+                }
+            }
+            if (val <= axis[0]) {
+                return { exactIndex: -1, i0: 0, i1: 0, t: 0 };
+            }
+            if (val >= axis[axis.length - 1]) {
+                const last = axis.length - 1;
+                return { exactIndex: -1, i0: last, i1: last, t: 0 };
+            }
+            for (let i = 0; i < axis.length - 1; i++) {
+                if (val > axis[i] && val < axis[i + 1]) {
+                    const t = (val - axis[i]) / (axis[i + 1] - axis[i]);
+                    return { exactIndex: -1, i0: i, i1: i + 1, t };
+                }
+            }
+            return { exactIndex: -1, i0: 0, i1: 0, t: 0 };
+        }
+
+        /**
+         * Lookup or bilinearly interpolate flow rate (m^3/min) directly from REFERENCE_TABLE_DATA
+         */
+        function getFlowRateM3PerMin(x, y) {
+            if (x <= 0 || y <= 0 || isNaN(x) || isNaN(y)) {
+                return { rate: 0, isExact: false, label: 'อยู่นอกขอบเขต' };
+            }
+
+            const bx = findGridBounds(x, X_VALUES);
+            const by = findGridBounds(y, Y_VALUES);
+
+            const getCell = (xi, yi) => {
+                const xKey = X_VALUES[xi].toFixed(1);
+                return REFERENCE_TABLE_DATA[xKey][yi];
+            };
+
+            // Direct exact cell match from 569624_2.jpg
+            if (bx.exactIndex !== -1 && by.exactIndex !== -1) {
+                const val = getCell(bx.exactIndex, by.exactIndex);
+                return { rate: val, isExact: true, label: 'ตรงช่องตาราง (Exact)' };
+            }
+
+            // Bilinear interpolation across surrounding grid points
+            const q00 = getCell(bx.i0, by.i0);
+            const q10 = getCell(bx.i1, by.i0);
+            const q01 = getCell(bx.i0, by.i1);
+            const q11 = getCell(bx.i1, by.i1);
+
+            const interpX0 = q00 + (q10 - q00) * bx.t;
+            const interpX1 = q01 + (q11 - q01) * bx.t;
+            const interpXY = interpX0 + (interpX1 - interpX0) * by.t;
+
+            const isOutOfRange =
+                x < X_VALUES[0] || x > X_VALUES[X_VALUES.length - 1] ||
+                y < Y_VALUES[0] || y > Y_VALUES[Y_VALUES.length - 1];
+
+            return {
+                rate: interpXY,
+                isExact: false,
+                label: isOutOfRange ? 'เทียบขอบตาราง' : 'เทียบค่าระหว่างช่อง (Interpolated)'
+            };
+        }
+
+        /**
+         * Build the interactive reference table once on load from REFERENCE_TABLE_DATA
+         */
+        function buildReferenceTable() {
+            const tbody = document.getElementById('reference-table-body');
+            let html = '';
+
+            X_VALUES.forEach(x => {
+                const xKey = x.toFixed(1);
+                const xLabel = x % 1 === 0 ? x.toFixed(0) : x.toFixed(1);
+                const rowValues = REFERENCE_TABLE_DATA[xKey];
+
+                html += `<tr class="hover:bg-blue-50/50 transition-colors">`;
+                html += `<td id="td-x-${xKey}" class="sticky left-0 z-10 bg-slate-100 font-bold text-slate-800 px-2.5 py-2 border-r border-slate-300">${xLabel}</td>`;
+
+                Y_VALUES.forEach((y, yIdx) => {
+                    const yKey = y.toFixed(1);
+                    const rate = rowValues[yIdx];
+                    const rateStr = rate.toFixed(3);
+                    html += `<td id="cell-${xKey}-${yKey}" onclick="selectFromTable(${x}, ${y})" class="px-2 py-2 border-r border-slate-200 cursor-pointer hover:bg-blue-100 active:bg-blue-200 transition text-slate-700">${rateStr}</td>`;
+                });
+
+                html += `</tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        /**
+         * Main calculation and UI update function
+         */
+        function calculate() {
+            const inputX = document.getElementById('input-x');
+            const inputY = document.getElementById('input-y');
+            const inputT = document.getElementById('input-t');
+
+            let x = parseFloat(inputX.value);
+            let y = parseFloat(inputY.value);
+            let t = parseFloat(inputT.value);
+
+            if (isNaN(x) || x < 0) x = 0;
+            if (isNaN(y) || y <= 0) y = 0;
+            if (isNaN(t) || t < 0) t = 0;
+
+            document.getElementById('disp-t').textContent = t;
+
+            // Lookup or interpolate flow rate (m^3/min)
+            const lookup = getFlowRateM3PerMin(x, y);
+            const displayRate = lookup.isExact ? lookup.rate : Number(lookup.rate.toFixed(3));
+
+            // Calculate total volume Q = rate (m^3/min) * t (min)
+            const totalVolume = displayRate * t;
+            const totalLiters = totalVolume * 1000;
+            const rateLiters = Math.round(displayRate * 1000);
+
+            // Render results
+            document.getElementById('res-rate-m3').textContent = displayRate.toFixed(3);
+            document.getElementById('res-rate-liters').textContent = rateLiters.toLocaleString('en-US');
+
+            document.getElementById('res-total-table').textContent = totalVolume.toFixed(2);
+            document.getElementById('res-total-liters').textContent = totalLiters.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('res-formula-breakdown').textContent = `${displayRate.toFixed(3)} × ${t}`;
+            document.getElementById('res-lookup-mode').textContent = lookup.label;
+
+            // Highlight matching cell in Reference Table
+            highlightTableCell(x, y);
+        }
+
+        /**
+         * Highlight matching X, Y cell in the reference table
+         */
+        let lastHighlightedCell = null;
+        let lastHighlightedX = null;
+        let lastHighlightedY = null;
+
+        function highlightTableCell(x, y) {
+            // Clear previous highlights
+            if (lastHighlightedCell) {
+                lastHighlightedCell.classList.remove('bg-amber-300', 'text-slate-950', 'font-extrabold', 'ring-2', 'ring-red-600', 'z-10', 'relative');
+                lastHighlightedCell.classList.add('text-slate-700');
+            }
+            if (lastHighlightedX) {
+                lastHighlightedX.classList.remove('bg-blue-600', 'text-white');
+                lastHighlightedX.classList.add('bg-slate-100', 'text-slate-800');
+            }
+            if (lastHighlightedY) {
+                lastHighlightedY.classList.remove('bg-red-600', 'text-white');
+            }
+
+            const xKey = x.toFixed(1);
+            const yKey = y.toFixed(1);
+
+            document.getElementById('tbl-badge-x').textContent = xKey;
+            document.getElementById('tbl-badge-y').textContent = yKey;
+
+            const cell = document.getElementById(`cell-${xKey}-${yKey}`);
+            const xHeader = document.getElementById(`td-x-${xKey}`);
+            const yHeader = document.getElementById(`th-y-${yKey}`);
+
+            if (cell) {
+                cell.classList.remove('text-slate-700');
+                cell.classList.add('bg-amber-300', 'text-slate-950', 'font-extrabold', 'ring-2', 'ring-red-600', 'z-10', 'relative');
+                lastHighlightedCell = cell;
+            }
+            if (xHeader) {
+                xHeader.classList.remove('bg-slate-100', 'text-slate-800');
+                xHeader.classList.add('bg-blue-600', 'text-white');
+                lastHighlightedX = xHeader;
+            }
+            if (yHeader) {
+                yHeader.classList.add('bg-red-600', 'text-white');
+                lastHighlightedY = yHeader;
+            }
+        }
+
+        /**
+         * Increment or decrement input values cleanly without floating point drift
+         */
+        function stepValue(field, delta) {
+            const input = document.getElementById(`input-${field}`);
+            let current = parseFloat(input.value) || 0;
+            let next = current + delta;
+
+            if (field === 't') {
+                next = Math.max(0, Math.round(next));
+                input.value = next;
+            } else {
+                next = Math.max(0.1, Math.round(next * 10) / 10);
+                input.value = next.toFixed(1);
+            }
+            calculate();
+        }
+
+        /**
+         * Set preset value directly
+         */
+        function setValue(field, val) {
+            const input = document.getElementById(`input-${field}`);
+            if (field === 't') {
+                input.value = val;
+            } else {
+                input.value = Number(val).toFixed(1);
+            }
+            calculate();
+        }
+
+        /**
+         * Select X and Y from the Reference Table and switch back to Calculator
+         */
+        function selectFromTable(x, y) {
+            document.getElementById('input-x').value = x.toFixed(1);
+            document.getElementById('input-y').value = y.toFixed(1);
+            calculate();
+            switchTab('calc');
+            showToast(`เลือกค่า X = ${x.toFixed(1)} ม., Y = ${y.toFixed(1)} ม.`);
+        }
+
+        /**
+         * Switch between Calculator Tab and Reference Table Tab
+         */
+        function switchTab(tab) {
+            const calcView = document.getElementById('view-calc');
+            const tableView = document.getElementById('view-table');
+            const calcBtn = document.getElementById('tab-calc-btn');
+            const tableBtn = document.getElementById('tab-table-btn');
+
+            if (tab === 'calc') {
+                calcView.classList.remove('hidden');
+                tableView.classList.add('hidden');
+                calcBtn.className = 'py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base transition-all bg-white text-blue-900 shadow-sm flex items-center justify-center gap-2';
+                tableBtn.className = 'py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2';
+            } else {
+                calcView.classList.add('hidden');
+                tableView.classList.remove('hidden');
+                tableBtn.className = 'py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base transition-all bg-white text-blue-900 shadow-sm flex items-center justify-center gap-2';
+                calcBtn.className = 'py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2';
+
+                // Auto scroll highlighted cell into view
+                if (lastHighlightedCell) {
+                    setTimeout(() => {
+                        lastHighlightedCell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                    }, 100);
+                }
+            }
+        }
+
+        /**
+         * Copy calculation summary to clipboard (iframe-safe)
+         */
+        function copySummary() {
+            const x = document.getElementById('input-x').value || '0';
+            const y = document.getElementById('input-y').value || '0';
+            const t = document.getElementById('input-t').value || '0';
+            const rate = document.getElementById('res-rate-m3').textContent;
+            const totalM3 = document.getElementById('res-total-table').textContent;
+            const totalLiters = document.getElementById('res-total-liters').textContent;
+
+            const summaryText = `สรุปปริมาณน้ำระบายท่อดับเพลิง (Ø 100 มม.)\n` +
+                                `- ระยะตกแนวนอน (X): ${x} ม.\n` +
+                                `- ระดับสูงแนวตั้ง (Y): ${y} ม.\n` +
+                                `- อัตราการไหล: ${rate} ลบ.ม./นาที\n` +
+                                `- ระยะเวลา (t): ${t} นาที\n` +
+                                `▶ ปริมาณน้ำรวม (Q): ${totalM3} ลบ.ม. (${totalLiters} ลิตร)`;
+
+            const textArea = document.createElement('textarea');
+            textArea.value = summaryText;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                showToast('คัดลอกสรุปผลลัพธ์ลงคลิปบอร์ดแล้ว');
+            } catch (err) {
+                showToast('ไม่สามารถคัดลอกได้ กรุณาลองอีกครั้ง');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        /**
+         * Show brief toast notification
+         */
+        let toastTimeout;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 2400);
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            buildReferenceTable();
+            calculate();
+        });
+    </script>
+</body>
+</html>
